@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 
 const modules = [
@@ -34,7 +34,7 @@ const games = [
   { name: 'Lucky Spin', status: '概念版', reward: '+10 XP' },
 ]
 
-const initialTasks = [
+const defaultTasks = [
   {
     id: 1,
     name: '每日签到',
@@ -72,11 +72,35 @@ const tools = [
   '新手教程中心',
 ]
 
+function loadSavedData() {
+  const saved = localStorage.getItem('piEcoHubData')
+
+  if (!saved) {
+    return {
+      xp: 0,
+      streak: 1,
+      tasks: defaultTasks,
+    }
+  }
+
+  try {
+    return JSON.parse(saved)
+  } catch {
+    return {
+      xp: 0,
+      streak: 1,
+      tasks: defaultTasks,
+    }
+  }
+}
+
 function App() {
+  const savedData = loadSavedData()
+
   const [active, setActive] = useState('home')
-  const [xp, setXp] = useState(0)
-  const [streak, setStreak] = useState(1)
-  const [tasks, setTasks] = useState(initialTasks)
+  const [xp, setXp] = useState(savedData.xp)
+  const [streak, setStreak] = useState(savedData.streak)
+  const [tasks, setTasks] = useState(savedData.tasks)
 
   const current = modules.find((item) => item.id === active)
   const completedTasks = tasks.filter((task) => task.done).length
@@ -84,20 +108,35 @@ function App() {
   const nextLevelXp = level * 50
   const progress = Math.min((xp / nextLevelXp) * 100, 100)
 
-  function completeTask(taskId) {
-    setTasks((oldTasks) =>
-      oldTasks.map((task) => {
-        if (task.id !== taskId || task.done) {
-          return task
-        }
+  useEffect(() => {
+    const data = {
+      xp,
+      streak,
+      tasks,
+    }
 
-        setXp((oldXp) => oldXp + task.xp)
-        return {
-          ...task,
-          done: true,
-        }
-      }),
+    localStorage.setItem('piEcoHubData', JSON.stringify(data))
+  }, [xp, streak, tasks])
+
+  function completeTask(taskId) {
+    const targetTask = tasks.find((task) => task.id === taskId)
+
+    if (!targetTask || targetTask.done) {
+      return
+    }
+
+    setTasks((oldTasks) =>
+      oldTasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              done: true,
+            }
+          : task,
+      ),
     )
+
+    setXp((oldXp) => oldXp + targetTask.xp)
   }
 
   function handleNav(target) {
@@ -106,6 +145,20 @@ function App() {
     if (target === 'games') {
       completeTask(4)
     }
+  }
+
+  function resetData() {
+    const confirmReset = window.confirm('确定要重置 XP 和任务进度吗？')
+
+    if (!confirmReset) {
+      return
+    }
+
+    setXp(0)
+    setStreak(1)
+    setTasks(defaultTasks)
+    localStorage.removeItem('piEcoHubData')
+    setActive('home')
   }
 
   return (
@@ -168,6 +221,7 @@ function App() {
           <div className="heroActions">
             <button onClick={() => handleNav('games')}>进入游戏大厅</button>
             <button onClick={() => handleNav('tasks')}>查看任务</button>
+            <button onClick={resetData}>重置数据</button>
           </div>
         </section>
 
@@ -228,7 +282,10 @@ function App() {
         {active === 'tasks' && (
           <div className="taskList">
             {tasks.map((task) => (
-              <div className={task.done ? 'taskItem done' : 'taskItem'} key={task.id}>
+              <div
+                className={task.done ? 'taskItem done' : 'taskItem'}
+                key={task.id}
+              >
                 <div>
                   <h3>{task.name}</h3>
                   <p>{task.detail}</p>
