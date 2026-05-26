@@ -168,13 +168,23 @@ function App() {
 
   async function loginWithPi() {
     setPiError('')
+    setPiStatus('正在调用 Pi 登录...')
 
     if (!window.Pi) {
-      setPiError('当前环境没有检测到 Pi SDK。请在 Pi Browser 或 Pi Developer Sandbox 中测试。')
+      const message = '没有检测到 window.Pi。请确认是在 Pi Browser 中打开，并且 Pi SDK 已加载。'
+      setPiError(message)
+      alert(message)
       return
     }
 
     try {
+      window.Pi.init({
+        version: '2.0',
+        sandbox: true,
+      })
+
+      setPiStatus('Pi SDK 已初始化，正在请求授权...')
+
       const authResult = await window.Pi.authenticate(
         ['username'],
         function onIncompletePaymentFound(payment) {
@@ -182,11 +192,29 @@ function App() {
         },
       )
 
+      console.log('Pi auth result:', authResult)
+
+      if (!authResult || !authResult.user) {
+        const message = 'Pi 授权返回了结果，但没有拿到用户信息。'
+        setPiError(message)
+        alert(message)
+        return
+      }
+
       setPiUser(authResult.user)
       setPiStatus('Pi 登录成功')
+      alert(`Pi 登录成功：${authResult.user.username || '已授权用户'}`)
     } catch (error) {
-      console.error(error)
-      setPiError('Pi 登录失败。请确认你在 Pi Browser 中打开，并已完成授权。')
+      console.error('Pi login error:', error)
+
+      const message =
+        error?.message ||
+        error?.toString?.() ||
+        'Pi 登录失败。请确认 App 已在 Developer Portal 注册，并在 Pi Browser 中打开。'
+
+      setPiError(message)
+      setPiStatus('Pi 登录失败')
+      alert(message)
     }
   }
 
@@ -227,7 +255,7 @@ function App() {
           {piError && <p>{piError}</p>}
         </div>
 
-        <button onClick={loginWithPi} disabled={!piReady}>
+        <button onClick={loginWithPi}>
           {piUser ? '重新授权' : '连接 Pi 账号'}
         </button>
       </section>
