@@ -102,11 +102,30 @@ function App() {
   const [streak, setStreak] = useState(savedData.streak)
   const [tasks, setTasks] = useState(savedData.tasks)
 
+  const [piReady, setPiReady] = useState(false)
+  const [piStatus, setPiStatus] = useState('检测 Pi SDK 中...')
+  const [piUser, setPiUser] = useState(null)
+  const [piError, setPiError] = useState('')
+
   const current = modules.find((item) => item.id === active)
   const completedTasks = tasks.filter((task) => task.done).length
   const level = Math.floor(xp / 50) + 1
   const nextLevelXp = level * 50
   const progress = Math.min((xp / nextLevelXp) * 100, 100)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (window.Pi) {
+        setPiReady(true)
+        setPiStatus('Pi SDK 已加载，可在 Pi Browser / Sandbox 中测试登录')
+      } else {
+        setPiReady(false)
+        setPiStatus('未检测到 Pi SDK，请确认网络或在 Pi Browser 中打开')
+      }
+    }, 800)
+
+    return () => clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     const data = {
@@ -147,6 +166,30 @@ function App() {
     }
   }
 
+  async function loginWithPi() {
+    setPiError('')
+
+    if (!window.Pi) {
+      setPiError('当前环境没有检测到 Pi SDK。请在 Pi Browser 或 Pi Developer Sandbox 中测试。')
+      return
+    }
+
+    try {
+      const authResult = await window.Pi.authenticate(
+        ['username'],
+        function onIncompletePaymentFound(payment) {
+          console.log('Incomplete payment found:', payment)
+        },
+      )
+
+      setPiUser(authResult.user)
+      setPiStatus('Pi 登录成功')
+    } catch (error) {
+      console.error(error)
+      setPiError('Pi 登录失败。请确认你在 Pi Browser 中打开，并已完成授权。')
+    }
+  }
+
   function resetData() {
     const confirmReset = window.confirm('确定要重置 XP 和任务进度吗？')
 
@@ -168,12 +211,40 @@ function App() {
           <div className="logo">π</div>
           <div>
             <h1>Pi Eco Hub</h1>
-            <p>轻量级 Pi 生态入口</p>
+            <p>轻量级 Pi 生态入口 · Pi Browser Ready</p>
           </div>
         </div>
 
-        <button className="walletButton">连接钱包</button>
+        <button className="walletButton" onClick={loginWithPi}>
+          {piUser ? '已连接 Pi' : 'Pi 登录'}
+        </button>
       </header>
+
+      <section className="piCard">
+        <div>
+          <span>Pi 环境状态</span>
+          <strong>{piStatus}</strong>
+          {piError && <p>{piError}</p>}
+        </div>
+
+        <button onClick={loginWithPi} disabled={!piReady}>
+          {piUser ? '重新授权' : '连接 Pi 账号'}
+        </button>
+      </section>
+
+      {piUser && (
+        <section className="piUserCard">
+          <div>
+            <span>Pi 用户名</span>
+            <strong>{piUser.username || '已授权用户'}</strong>
+          </div>
+
+          <div>
+            <span>UID</span>
+            <strong>{piUser.uid || 'Pi SDK 已返回用户信息'}</strong>
+          </div>
+        </section>
+      )}
 
       <section className="profileBar">
         <div>

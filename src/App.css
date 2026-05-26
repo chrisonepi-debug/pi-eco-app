@@ -365,4 +365,70 @@ button.featureCard {
     align-items: flex-start;
     gap: 16px;
   }
+}.piCard,
+.piUserCard {
+  max-width: 1180px;
+  margin: 18px auto 0;
+  padding: 18px 22px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.075);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  backdrop-filter: blur(18px);
+}
+
+.piCard span,
+.piUserCard span {
+  display: block;
+  color: #b9b9c8;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.piCard strong,
+.piUserCard strong {
+  color: #f6c453;
+  font-size: 18px;
+}
+
+.piCard p {
+  margin: 8px 0 0;
+  color: #ff9f9f;
+  line-height: 1.5;
+}
+
+.piCard button {
+  border: none;
+  border-radius: 999px;
+  padding: 12px 18px;
+  background: linear-gradient(135deg, #8f62ff, #f6c453);
+  color: #111111;
+  font-weight: 900;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.piCard button:disabled {
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.14);
+  color: #cccccc;
+}
+
+.piUserCard {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 900px) {
+  .piCard {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .piUserCard {
+    grid-template-columns: 1fr;
+  }
 }
